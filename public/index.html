@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-154580240-1"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'UA-154580240-1');
+        </script>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>KKBOX OAuth Code Flow Helper</title>
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <style>
+.input-group>.input-group-prepend {
+    flex: 0 0 29%;
+}
+.input-group .input-group-text {
+    width: 100%;
+}
+        </style>
+    </head>
+    <body>
+        <div>&nbsp;</div>
+        <div class="container-sm">
+            <div class="card border-info">
+                <h1 class="card-header">KKBOX OAuth Code Flow Helper</h1>
+
+                <div class="card-body">
+                    <div id="inputInterface">
+                        <p class="lead">
+                        Please create KKBOX OAuth App from <a href="http://developer.kkbox.com/#/app">KKBOX Developer Site</a>, and fill the infomation into the form.
+                        </p>
+
+                        <form name="kkboxClient" id="kkboxClient">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="labelClientId">Client ID</span>
+                                </div>
+                                <input type="text" class="form-control" name="clientId" id="clientId" aria-describedby="basic-addon3">
+                            </div>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="labelClientSecret">Client Secret</span>
+                                </div>
+                                <input type="text" class="form-control" name="clientSecret" id="clientSecret" aria-describedby="basic-addon3">
+                            </div>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="labelReturnUrl">Return URL</span>
+                                </div>
+                                <input type="text" class="form-control" name="returnUrl" id="returnUrl" aria-describedby="basic-addon3">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBtn">
+                                Submit
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="resultInterface" style="display: none;">
+                        <div id="resultForm">
+                            <h5 class="card-title">Redirect URL</h5>
+                            <p class="card-text"> 
+                                You have to fill the <a href="" id="redirUrl">URL</a> in your <a href="https://developer.kkbox.com/#/app/">KKBOX App</a> Redirect uri.
+                            </p>
+                            <h5 class="card-title">Authorize URL</h5>
+                            <p class="card-text">
+                                You can use this <a href="" id="authUrl">URL</a> in your service for KKBOX OAuth login.
+                            </p>
+
+                            <h5 class="card-title">Return URL</h5>
+                            <p class="card-text">
+                                The getToken API will redirect to the <a href="" id="retUrl">URL</a> with access/refresh token and expires arguments.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script>
+        $(function() {
+            $("#kkboxClient").submit(function() {
+                $('#submitBtn').text('Loading.. ');
+                $('#submitBtn').append('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                addNewClient();
+                return false;
+            });
+        });
+
+        function addNewClient() {
+            var url = '/addNewSite';
+            var formData = $("#kkboxClient").serialize();
+
+            $.post(url, formData , function () {
+                console.log('addNewClient request');
+            }).done(function(resp) {
+                if(resp.state == 200) {
+                    console.log('create client successful');
+                    var redirUrl = 'https://kkbox-oauth-helper.web.app/' + resp.siteId + '/getToken';
+                    var host = 'account.kkbox.com';
+                    var path = '/oauth2/authorize';
+                    var authUrl = 'https://' + host + path + 
+                                    '?redirect_uri=' + encodeURI(redirUrl) + 
+                                    '&client_id=' + $('#clientId').val() + 
+                                    '&response_type=code&state=YOUR_STATUS_VAR';
+
+                    $('#redirUrl').attr("href", redirUrl);
+                    $('#authUrl').attr("href", authUrl);
+                    $('#retUrl').attr("href", resp.retUrl);
+
+                    $("#inputInterface").fadeOut(400, function() {
+                        $("#resultInterface").fadeIn(400);
+                    });
+                } else {
+                    $('#submitBtn').text('Submit');
+                }
+            }).catch(function(err) {
+                $('#submitBtn').text('Submit');
+                console.log('Error: ');
+                for(key in err) console.log(key + ' : ' + err[key]);
+            });
+
+            return false;
+        }
+        </script>
+    </body>
+</html>
